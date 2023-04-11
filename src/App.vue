@@ -1,10 +1,12 @@
 <script setup>
-import RickMortyCards from './views/RickMortyCards.vue';
+import { RouterView } from 'vue-router'
 
 </script>
 
 <template>
-  <RickMortyCards />
+  <RouterView />
 </template>
 
-<style scoped></style>
+<style scoped>
+
+</style>
