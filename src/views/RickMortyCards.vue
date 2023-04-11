@@ -6,20 +6,30 @@ import { onMounted, ref, watch } from 'vue'
 
 const characters = ref(null)
 const page = ref(1)
+const isLoading = ref(false)
 
 onMounted(async () => {
+    isLoading.value = true
     const response = await axios.get('https://rickandmortyapi.com/api/character/?page=1')
     characters.value = response.data.results
+    isLoading.value = false
 })
 
 watch(page, async () => {
+    isLoading.value = true
     const response = await axios.get(`https://rickandmortyapi.com/api/character/?page=${page.value}`)
     characters.value = response.data.results
+    isLoading.value = false
 })
 </script>
 
 <template>
     <div class="container">
+        <div class="btn-container">
+            <button @click="page--" :disabled="page <= 1">&lt</button>
+            <button @click="page++" :disabled="isLoading">></button>
+        </div>
+
         <div class="cards">
             <TransitionGroup name="fade">
                 <Card v-for="character in characters" :key="character.id" :name="character.name" :image="character.image"
@@ -28,8 +38,8 @@ watch(page, async () => {
         </div>
 
         <div class="btn-container">
-            <button @click="page--">&lt</button>
-            <button @click="page++">></button>
+            <button @click="page--" :disabled="page <= 1">&lt</button>
+            <button @click="page++" :disabled="isLoading">></button>
         </div>
     </div>
 </template>
@@ -39,11 +49,11 @@ watch(page, async () => {
 <style scoped>
 .container {
     background-color: black;
+    padding: 40px 0px;
 }
 
 .cards {
     max-width: 1400px;
-    padding: 40px 0px;
     margin: 0px auto;
     display: flex;
     justify-content: center;
@@ -65,6 +75,6 @@ button {
     border-radius: 100%;
     cursor: pointer;
     border: 2px solid rgb(233, 138, 5);
-    margin-bottom: 20px;
+    margin: 20px 0;
 }
 </style>
