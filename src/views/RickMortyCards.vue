@@ -2,49 +2,89 @@
 import '../assets/animation.css'
 import axios from 'axios'
 import Card from '../components/Card.vue'
+import NavBar from '../components/NavBar.vue';
+import ErrorCard from '../components/ErrorCard.vue'
+import defineErrors from '../composable/defineErrors';
 import { onMounted, ref, watch } from 'vue'
+import PaginationBtn from '../components/paginationBtn.vue';
 
+const { hasError, handleError } = defineErrors()
 const characters = ref(null)
-const page = ref(1)
 const isLoading = ref(false)
+const page = ref(0)
+const search = ref('')
+
+const updateSearch = (searchValue) => {
+    search.value = searchValue
+}
+
+const increment = (paginationPage) => {
+    page.value = paginationPage
+}
+const decrement = (paginationPage) => {
+    page.value = paginationPage
+}
 
 onMounted(async () => {
-    isLoading.value = true
-    const response = await axios.get('https://rickandmortyapi.com/api/character/?page=1')
-    characters.value = response.data.results
-    isLoading.value = false
+    try {
+        hasError.value = ''
+        isLoading.value = true
+        const response = await axios.get('https://rickandmortyapi.com/api/character/?page=1')
+        characters.value = response.data.results
+        isLoading.value = false
+    } catch (error) {
+        handleError(error);
+    }
 })
 
-watch(page, async () => {
+watch(() => page.value, async () => {
+    hasError.value = ''
     isLoading.value = true
     const response = await axios.get(`https://rickandmortyapi.com/api/character/?page=${page.value}`)
     characters.value = response.data.results
     isLoading.value = false
 })
+
+watch(search, async () => {
+    try {
+        hasError.value = ''
+        isLoading.value = true
+        const response = await axios.get(`https://rickandmortyapi.com/api/character/?name=${search.value}`)
+        characters.value = response.data.results
+        isLoading.value = false
+    } catch (error) {
+        handleError(error);
+        characters.value = []
+    }
+})
 </script>
 
 <template>
+    <NavBar @update-search="updateSearch" />
+
     <div class="container">
-        <div class="btn-container">
-            <button @click="page--" :disabled="page <= 1">&lt</button>
-            <button @click="page++" :disabled="isLoading">></button>
+        <PaginationBtn @increment="increment" @decrement="decrement" :isLoading="isLoading" />
+
+        <div v-if="isLoading && !hasError">
+            <div class="spin-container">
+                <NSpace>
+                    <NSpin size="large" class="spiner" />
+                </NSpace>
+            </div>
         </div>
 
-        <div class="cards">
+        <div v-if="!hasError && !isLoading" class="cards">
             <TransitionGroup name="fade">
                 <Card v-for="character in characters" :key="character.id" :name="character.name" :image="character.image"
                     :species="character.species" />
             </TransitionGroup>
         </div>
 
-        <div class="btn-container">
-            <button @click="page--" :disabled="page <= 1">&lt</button>
-            <button @click="page++" :disabled="isLoading">></button>
-        </div>
+        <ErrorCard v-if="hasError" :hasError="hasError" />
+
+        <PaginationBtn @increment="increment" @decrement="decrement" :isLoading="isLoading" />
     </div>
 </template>
-
-
 
 <style scoped>
 .container {
@@ -61,20 +101,14 @@ watch(page, async () => {
     gap: 30px 12px;
 }
 
-.btn-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
+.spin-container {
+    position: relative;
+    margin: 20px auto;
 }
 
-button {
-    background-color: #FAEBD7;
-    width: 50px;
-    height: 50px;
-    border-radius: 100%;
-    cursor: pointer;
-    border: 2px solid rgb(233, 138, 5);
-    margin: 20px 0;
+.spiner {
+    position: absolute;
+    right: 50%;
+    left: 50%;
 }
 </style>
